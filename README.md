@@ -4,7 +4,7 @@ Agente de chat (front + backend + herramientas + LLM) que actúa como punto úni
 
 ## Probar
 
-- **Link público:** `<URL del despliegue>`  ·  **Clave de acceso:** `<ACCESS_KEY>`  _(completar al desplegar; ver "Despliegue")_
+- **Link público:** `https://agente-contratos-bc3j.onrender.com`  ·  **Clave de acceso:** `miavalentinasifontespalmera`  _(completar al desplegar; ver "Despliegue")_
 - Prompt de demo (botón "Ejecutar el prompt de ejemplo" en el chat):
   > Procesa el buzón de contratos con fecha de hoy 2026-09-03. Registra lo que esté limpio, muéstrame lo que requiere revisión campo por campo y termina con el reporte de alertas. No registres nada dudoso sin preguntarme.
 
