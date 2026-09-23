@@ -1,0 +1,23 @@
+{
+  "name": "reto-02-agente-contratos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agente conversacional para el registro de contratos vigentes (Reto 02)",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "demo": "tsx demo.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build:modulo": "tsx scripts/build-modulo.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.19.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
