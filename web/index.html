@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente de Registro de Contratos</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #fff; --borde: #dfe3e8; --texto: #1c2430; --suave: #667085;
+    --azul: #2451d6; --azul-suave: #e8eefc; --ok: #137a4b; --ok-bg: #e7f6ee;
+    --err: #b42318; --err-bg: #fdecea; --aviso: #b54708; --aviso-bg: #fff4e0; --aviso-borde: #f5a524;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--texto); background: var(--bg); height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--panel); border-bottom: 1px solid var(--borde); padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; flex: 1; min-width: 220px; }
+  .badge { font-size: 12px; color: var(--suave); background: var(--bg); border: 1px solid var(--borde); border-radius: 999px; padding: 2px 10px; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--borde); background: var(--panel); border-radius: 8px; padding: 6px 12px; color: var(--texto); }
+  button:hover:not(:disabled) { background: var(--bg); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primario { background: var(--azul); border-color: var(--azul); color: #fff; }
+  button.primario:hover:not(:disabled) { background: #1c42b0; }
+  #chat { flex: 1; overflow-y: auto; padding: 16px; }
+  .col { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+  .msg { padding: 10px 14px; border-radius: 12px; max-width: 92%; word-wrap: break-word; }
+  .msg.user { align-self: flex-end; background: var(--azul); color: #fff; white-space: pre-wrap; }
+  .msg.agente { align-self: flex-start; background: var(--panel); border: 1px solid var(--borde); }
+  .msg.agente.confirmar { border: 2px solid var(--aviso-borde); background: var(--aviso-bg); }
+  .msg.agente p { margin: 6px 0; } .msg.agente p:first-child { margin-top: 0; } .msg.agente p:last-child { margin-bottom: 0; }
+  .msg table { border-collapse: collapse; margin: 8px 0; font-size: 13px; display: block; overflow-x: auto; }
+  .msg th, .msg td { border: 1px solid var(--borde); padding: 4px 8px; text-align: left; vertical-align: top; }
+  .msg th { background: var(--bg); }
+  .msg code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .msg pre { background: #eef0f3; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+  .msg ul, .msg ol { margin: 6px 0; padding-left: 22px; }
+  .msg h1, .msg h2, .msg h3 { font-size: 15px; margin: 10px 0 4px; }
+  .aviso-confirmacion { font-size: 12px; font-weight: 600; color: var(--aviso); margin-bottom: 6px; }
+  details.tool { align-self: flex-start; width: 92%; border: 1px solid var(--borde); border-left: 4px solid var(--ok); background: var(--panel); border-radius: 8px; font-size: 13px; }
+  details.tool.err { border-left-color: var(--err); }
+  details.tool.bloq { border-left-color: var(--aviso-borde); }
+  details.tool summary { cursor: pointer; padding: 6px 10px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  details.tool .nombre { font-weight: 600; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  details.tool .res { color: var(--suave); }
+  details.tool.err .res { color: var(--err); }
+  details.tool .ms { margin-left: auto; color: var(--suave); font-size: 11px; }
+  details.tool .cuerpo { padding: 0 10px 8px; }
+  details.tool h4 { margin: 8px 0 2px; font-size: 11px; text-transform: uppercase; color: var(--suave); letter-spacing: .04em; }
+  details.tool pre { margin: 0; background: #f3f4f6; padding: 8px; border-radius: 6px; overflow-x: auto; max-height: 240px; font-size: 11.5px; }
+  .pensando { align-self: flex-start; color: var(--suave); font-size: 13px; padding: 4px 8px; }
+  .pensando::after { content: ""; animation: puntos 1.2s steps(4) infinite; }
+  @keyframes puntos { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+  .vacio { text-align: center; color: var(--suave); margin-top: 8vh; }
+  .vacio .cta { margin-top: 12px; }
+  footer { background: var(--panel); border-top: 1px solid var(--borde); padding: 10px 16px; }
+  #banner { display: none; background: var(--aviso-bg); border: 1px solid var(--aviso-borde); color: var(--aviso); border-radius: 8px; padding: 6px 10px; margin: 0 auto 8px; max-width: 920px; font-size: 13px; font-weight: 600; }
+  #banner.visible { display: block; }
+  form { max-width: 920px; margin: 0 auto; display: flex; gap: 8px; }
+  textarea { flex: 1; font: inherit; border: 1px solid var(--borde); border-radius: 8px; padding: 8px 10px; resize: none; height: 46px; }
+  textarea:focus { outline: 2px solid var(--azul-suave); border-color: var(--azul); }
+  footer.espera textarea { border-color: var(--aviso-borde); background: var(--aviso-bg); }
+  dialog { border: 1px solid var(--borde); border-radius: 12px; padding: 0; width: min(1000px, 95vw); max-height: 85vh; }
+  dialog::backdrop { background: rgba(16,24,40,.45); }
+  dialog .cab { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--borde); font-weight: 600; }
+  dialog .contenido { padding: 12px 16px; overflow: auto; max-height: calc(85vh - 60px); }
+  dialog table { border-collapse: collapse; font-size: 12.5px; }
+  dialog th, dialog td { border: 1px solid var(--borde); padding: 4px 8px; text-align: left; vertical-align: top; white-space: nowrap; }
+  dialog td.largo { white-space: normal; min-width: 260px; }
+  dialog th { background: var(--bg); position: sticky; top: 0; }
+  #acceso { padding: 20px; }
+  #acceso input { font: inherit; padding: 8px; border: 1px solid var(--borde); border-radius: 8px; width: 100%; margin: 10px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agente de Registro de Contratos Vigentes</h1>
+  <span class="badge" id="modelo">…</span>
+  <button id="btnMaestro" title="Ver el maestro de contratos actual">Maestro</button>
+  <button id="btnAlertas" title="Ver el último reporte de alertas">Alertas</button>
+  <button id="btnReset" title="Borra out/ y reinicia la conversación">Reiniciar demo</button>
+</header>
+
+<div id="chat"><div class="col" id="col"></div></div>
+
+<footer id="pie">
+  <div id="banner">⚠ El agente está esperando tu confirmación antes de registrar. Responde en el chat.</div>
+  <form id="form">
+    <textarea id="entrada" placeholder="Escribe un mensaje… (Enter envía, Shift+Enter salta de línea)" maxlength="2000"></textarea>
+    <button class="primario" id="enviar" type="submit">Enviar</button>
+  </form>
+</footer>
+
+<dialog id="dlg">
+  <div class="cab"><span id="dlgTitulo"></span><button id="dlgCerrar">Cerrar</button></div>
+  <div class="contenido" id="dlgCuerpo"></div>
+</dialog>
+
+<dialog id="dlgAcceso">
+  <form method="dialog" id="acceso">
+    <strong>Clave de acceso</strong>
+    <p style="color:var(--suave);margin:6px 0 0">Este agente está protegido. Ingresa la clave que te entregaron.</p>
+    <input id="claveInput" type="password" autocomplete="off" placeholder="Clave de acceso">
+    <button class="primario" value="ok">Entrar</button>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const PROMPT_DEMO = "Procesa el buzón de contratos con fecha de hoy 2026-09-03. Registra lo que esté limpio, muéstrame lo que requiere revisión campo por campo y termina con el reporte de alertas. No registres nada dudoso sin preguntarme.";
+const $ = (id) => document.getElementById(id);
+let sessionId = null;
+let claveAcceso = "";
+let ocupado = false;
+
+/* ---------- utilidades ---------- */
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function nuevoId() {
+  const a = new Uint8Array(9); crypto.getRandomValues(a);
+  return "s-" + Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/* Render mínimo de Markdown: escapa primero, luego aplica formato (no se ejecuta HTML del modelo). */
+function md(texto) {
+  const bloques = [];
+  let t = esc(texto).replace(/```(?:\w+)?\n([\s\S]*?)```/g, (_, c) => { bloques.push(`<pre>${c}</pre>`); return `\u0000${bloques.length - 1}\u0000`; });
+  const inline = (s) => s.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+  const lineas = t.split("\n"); const out = []; let i = 0;
+  while (i < lineas.length) {
+    const l = lineas[i];
+    if (/^\s*\|.*\|\s*$/.test(l) && /^\s*\|[\s:|-]+\|\s*$/.test(lineas[i + 1] || "")) {
+      const celdas = (x) => x.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const cab = celdas(l); i += 2; const filas = [];
+      while (i < lineas.length && /^\s*\|.*\|\s*$/.test(lineas[i])) { filas.push(celdas(lineas[i])); i++; }
+      out.push(`<table><thead><tr>${cab.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${filas.map((f) => `<tr>${f.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      continue;
+    }
+    const h = /^(#{1,3})\s+(.*)$/.exec(l);
+    if (h) { out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+    if (/^\s*[-*]\s+/.test(l)) {
+      const items = []; while (i < lineas.length && /^\s*[-*]\s+/.test(lineas[i])) { items.push(inline(lineas[i].replace(/^\s*[-*]\s+/, ""))); i++; }
+      out.push(`<ul>${items.map((x) => `<li>${x}</li>`).join("")}</ul>`); continue;
+    }
+    if (/^\s*\d+\.\s+/.test(l)) {
+      const items = []; while (i < lineas.length && /^\s*\d+\.\s+/.test(lineas[i])) { items.push(inline(lineas[i].replace(/^\s*\d+\.\s+/, ""))); i++; }
+      out.push(`<ol>${items.map((x) => `<li>${x}</li>`).join("")}</ol>`); continue;
+    }
+    if (l.trim() === "") { i++; continue; }
+    const parrafo = []; while (i < lineas.length && lineas[i].trim() !== "" && !/^(\s*\||#{1,3}\s|\s*[-*]\s|\s*\d+\.\s)/.test(lineas[i])) { parrafo.push(inline(lineas[i])); i++; }
+    if (parrafo.length) out.push(`<p>${parrafo.join("<br>")}</p>`); else i++;
+  }
+  return out.join("").replace(/\u0000(\d+)\u0000/g, (_, n) => bloques[Number(n)]);
+}
+
+/* ---------- API ---------- */
+async function api(ruta, opciones = {}) {
+  const res = await fetch(ruta, { ...opciones, headers: { "content-type": "application/json", "x-access-key": claveAcceso, ...(opciones.headers || {}) } });
+  if (res.status === 401) { await pedirClave(); return api(ruta, opciones); }
+  return res;
+}
+
+function pedirClave() {
+  return new Promise((resolver) => {
+    const dlg = $("dlgAcceso");
+    dlg.addEventListener("close", () => { claveAcceso = $("claveInput").value; resolver(); }, { once: true });
+    dlg.showModal();
+  });
+}
+
+/* ---------- render del chat ---------- */
+function vacio() {
+  $("col").innerHTML = `<div class="vacio"><h2>Buzón de contratos</h2><p>Pídele al agente que procese el buzón o haz una pregunta sobre el proceso.</p><button class="primario cta" id="btnDemo">Ejecutar el prompt de ejemplo</button></div>`;
+  $("btnDemo").onclick = () => enviar(PROMPT_DEMO);
+}
+
+function agregar(el) { $("col").appendChild(el); $("chat").scrollTop = $("chat").scrollHeight; return el; }
+
+function burbuja(clase, html) { const d = document.createElement("div"); d.className = "msg " + clase; d.innerHTML = html; return agregar(d); }
+
+function tarjetaTool(ev) {
+  const d = document.createElement("details");
+  d.className = "tool" + (ev.bloqueado ? " bloq" : ev.ok ? "" : " err");
+  let resultado = ev.resultado;
+  try { resultado = JSON.stringify(JSON.parse(ev.resultado), null, 2); } catch {}
+  const id = ev.args && ev.args.mensaje_id ? ev.args.mensaje_id : "";
+  d.innerHTML = `<summary><span class="nombre">${esc(ev.nombre)}</span><span>${esc(id)}</span><span class="res">${ev.bloqueado ? "⛔ bloqueado — " : ""}${esc(ev.resumen)}</span><span class="ms">${ev.ms} ms</span></summary>
+    <div class="cuerpo"><h4>Argumentos</h4><pre>${esc(JSON.stringify(ev.args, null, 2))}</pre><h4>Resultado</h4><pre>${esc(resultado)}</pre></div>`;
+  return agregar(d);
+}
+
+function pintarTurno(t) {
+  burbuja("user", esc(t.usuario ?? t.user ?? ""));
+  (t.toolCalls || []).forEach(tarjetaTool);
+  const confirmar = t.needsConfirmation;
+  burbuja("agente" + (confirmar ? " confirmar" : ""), (confirmar ? `<div class="aviso-confirmacion">⚠ ESPERANDO TU CONFIRMACIÓN</div>` : "") + md(t.respuesta ?? t.reply ?? ""));
+  marcarEspera(confirmar);
+}
+
+function marcarEspera(espera) {
+  $("banner").classList.toggle("visible", espera);
+  $("pie").classList.toggle("espera", espera);
+  if (espera) $("entrada").placeholder = "Confirma o corrige los campos para que el agente registre…";
+  else $("entrada").placeholder = "Escribe un mensaje… (Enter envía, Shift+Enter salta de línea)";
+}
+
+function bloquear(v) { ocupado = v; $("enviar").disabled = v; $("entrada").disabled = v; if (!v) $("entrada").focus(); }
+
+async function enviar(texto) {
+  if (ocupado || !texto.trim()) return;
+  if ($("col").querySelector(".vacio")) $("col").innerHTML = "";
+  burbuja("user", esc(texto));
+  $("entrada").value = "";
+  bloquear(true);
+  const espera = document.createElement("div"); espera.className = "pensando"; espera.textContent = "El agente está trabajando"; agregar(espera);
+  try {
+    const res = await api("/api/chat", { method: "POST", body: JSON.stringify({ sessionId, message: texto }) });
+    const datos = await res.json();
+    espera.remove();
+    if (!res.ok) { burbuja("agente", `⚠️ ${esc(datos.error || "Error del servidor")}`); return; }
+    datos.toolCalls.forEach(tarjetaTool);
+    burbuja("agente" + (datos.needsConfirmation ? " confirmar" : ""), (datos.needsConfirmation ? `<div class="aviso-confirmacion">⚠ ESPERANDO TU CONFIRMACIÓN</div>` : "") + md(datos.reply));
+    marcarEspera(datos.needsConfirmation);
+  } catch {
+    espera.remove();
+    burbuja("agente", "⚠️ No se pudo contactar al servidor. Revisa tu conexión y reintenta.");
+  } finally { bloquear(false); }
+}
+
+/* ---------- paneles ---------- */
+function abrirPanel(titulo, html) { $("dlgTitulo").textContent = titulo; $("dlgCuerpo").innerHTML = html; $("dlg").showModal(); }
+
+async function verMaestro() {
+  const res = await api("/api/maestro"); const { filas } = await res.json();
+  if (!filas.length) return abrirPanel("Maestro", "<p>Vacío.</p>");
+  const cols = Object.keys(filas[0]);
+  const nuevos = new Set(filas.filter((f) => f.fecha_registro >= "2026-05-30").map((f) => f.id_contrato));
+  abrirPanel(`Maestro de contratos (${filas.length} filas)`, `<table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>${filas.map((f) => `<tr${nuevos.has(f.id_contrato) ? ' style="background:#eef6ff"' : ""}>${cols.map((c) => `<td class="${c === "objeto" ? "largo" : ""}">${esc(f[c])}</td>`).join("")}</tr>`).join("")}</tbody></table><p style="color:var(--suave);font-size:12px">Resaltadas: registradas desde el corte del 2026-05-30.</p>`);
+}
+
+async function verAlertas() {
+  const res = await api("/api/alertas");
+  abrirPanel("Reporte de alertas (out/alertas.md)", md(await res.text()));
+}
+
+async function reiniciar() {
+  if (!confirm("Esto borra out/ (maestro de trabajo, historial, log) y reinicia la conversación. ¿Continuar?")) return;
+  await api("/api/reset", { method: "POST" });
+  sessionId = nuevoId(); history.replaceState(null, "", "#s=" + sessionId);
+  marcarEspera(false); vacio();
+}
+
+/* ---------- arranque ---------- */
+async function iniciar() {
+  const salud = await (await fetch("/api/health")).json().catch(() => null);
+  $("modelo").textContent = salud ? `${salud.provider} · ${salud.model}` : "sin conexión";
+  const previo = /#s=([\w-]+)/.exec(location.hash);
+  sessionId = previo ? previo[1] : nuevoId();
+  history.replaceState(null, "", "#s=" + sessionId);
+  if (previo) {
+    const res = await api("/api/sessions/" + sessionId);
+    if (res.ok) {
+      const h = await res.json();
+      if (h.turnos.length) { $("col").innerHTML = ""; h.turnos.forEach(pintarTurno); return; }
+    }
+  }
+  vacio();
+}
+
+$("form").addEventListener("submit", (e) => { e.preventDefault(); enviar($("entrada").value); });
+$("entrada").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar($("entrada").value); } });
+$("btnMaestro").onclick = verMaestro;
+$("btnAlertas").onclick = verAlertas;
+$("btnReset").onclick = reiniciar;
+$("dlgCerrar").onclick = () => $("dlg").close();
+iniciar();
+</script>
+</body>
+</html>
