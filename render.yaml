@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: agente-contratos
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ACCESS_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: claude-sonnet-5
+      - key: MAX_ITERATIONS
+        value: "25"
+      - key: MAX_TOKENS_SESSION
+        value: "200000"
